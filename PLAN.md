@@ -135,7 +135,7 @@ Grafiken ritas i kod med pixelmatriser och ljuden genereras i webbläsaren. Spel
 ### Fas 7 – Publicering
 - [x] `README.md` på svenska med beskrivning och kontroller
 - [x] Testa i Chrome, Firefox, Safari och på mobil (Playwright-motorerna Chromium, Firefox och WebKit samt mobilemulering med iPhone 13 och Pixel 7; det är emulerat, riktiga enheter återstår att testa)
-- [ ] Aktivera GitHub Pages och verifiera att spelet laddar
+- [x] Aktivera GitHub Pages och verifiera att spelet laddar
 - [x] Favicon och meta-taggar (titel, beskrivning, förhandsbild)
 
 ## Notering om hosting
