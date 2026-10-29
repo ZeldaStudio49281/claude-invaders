@@ -1,0 +1,133 @@
+:root {
+  --bg: #1f1a17;
+  --accent: #d97757;
+  --accent-dark: #a14f35;
+  --beige: #c9b8a3;
+  --cream: #f5f0e8;
+  --muted: #5a4a40;
+  --btn: 72px;   /* knappstorlek, måste stämma med PAD_* i js/config.js */
+  --gap: 10px;
+}
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  overscroll-behavior: none;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+  height: 100vh;
+  height: 100dvh;
+  box-sizing: border-box;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+canvas#game {
+  display: block;
+  flex: none;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  touch-action: none;
+  /* bredd/höjd sätts av main.js (heltalsskalning) */
+}
+
+.pad { display: none; }
+
+/* ---- Touchläge ------------------------------------------------------------------------ */
+.touch .pad {
+  display: flex;
+  gap: var(--gap);
+  padding: 8px;
+  box-sizing: border-box;
+  touch-action: none;
+  min-width: 0;
+}
+
+.touch #app { display: grid; }
+
+.pad-btn {
+  flex: 1 1 0;
+  max-width: 120px;
+  min-width: 0;
+  height: var(--btn);
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cream);
+  background: var(--muted);
+  border: 0;
+  /* pixelkant: ljus kant överst/vänster, mörk nederst/höger, hörn skärs av */
+  box-shadow: inset 3px 3px 0 var(--accent), inset -3px -3px 0 var(--accent-dark);
+  clip-path: polygon(6px 0, calc(100% - 6px) 0, calc(100% - 6px) 6px, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 6px calc(100% - 6px), 0 calc(100% - 6px), 0 6px, 6px 6px);
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.pad-btn.wide { flex-grow: 1.2; }
+.pad-btn.small { height: 44px; flex: 0 1 84px; }
+.pad-btn.down {
+  background: var(--accent-dark);
+  box-shadow: inset 3px 3px 0 var(--accent-dark), inset -3px -3px 0 var(--accent);
+}
+.pad-btn:focus-visible { outline: 3px solid var(--cream); outline-offset: -6px; }
+.pad-btn.off .label { opacity: 0.45; }
+
+.pad-btn .label {
+  display: block;
+  max-width: calc(100% - 12px);
+  height: auto;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+/* Namninmatning: pilar och OK ersätter skjut och Refaktorering */
+.touch .mode-name { display: none; }
+.touch body[data-state="enterName"] .mode-play { display: none; }
+.touch body[data-state="enterName"] .mode-name { display: flex; }
+
+/* Liggande: canvasen i mitten, knappar på sidorna */
+@media (orientation: landscape) {
+  .touch #app {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-rows: 1fr auto;
+    grid-template-areas: "menu canvas right" "left canvas right";
+  }
+  .touch canvas#game { grid-area: canvas; align-self: center; }
+  .touch #pad-menu { grid-area: menu; align-self: start; justify-content: flex-start; }
+  .touch #pad-left { grid-area: left; align-self: end; justify-content: flex-start; }
+  .touch #pad-right { grid-area: right; align-self: end; justify-content: flex-end; }
+}
+
+/* Stående: canvasen överst, knappar under */
+@media (orientation: portrait) {
+  .touch #app {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas: "canvas canvas" "menu menu" "left right";
+  }
+  .touch canvas#game { grid-area: canvas; justify-self: center; align-self: start; }
+  .touch #pad-menu { grid-area: menu; align-self: start; justify-content: center; }
+  .touch #pad-left { grid-area: left; align-self: end; }
+  .touch #pad-right { grid-area: right; align-self: end; }
+}

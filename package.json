@@ -1,0 +1,16 @@
+{
+  "name": "claude-invaders",
+  "private": true,
+  "description": "Buggjakten – Claude mot buggarna. Utvecklingsberoenden används bara för tester; spelet självt har inga beroenden.",
+  "type": "module",
+  "scripts": {
+    "start": "serve -l 8000 .",
+    "test": "playwright test",
+    "test:all": "node -e \"process.env.ALL_BROWSERS='1'; require('child_process').execSync('npx playwright test', { stdio: 'inherit', env: process.env })\"",
+    "assets": "node scripts/render-assets.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "serve": "^14.2.6"
+  }
+}
