@@ -3,7 +3,7 @@ import { STR } from './strings.js';
 import { PALETTE } from './palette.js';
 import { wasPressed, wasPressedNav, isDown, typedChars } from './input.js';
 import { WIDTH, HEIGHT, HUD_H, CONTEXT_MAX, DROP_CHANCE } from './config.js';
-import { drawText } from './font.js';
+import { drawText, textWidth } from './font.js';
 import { Player } from './player.js';
 import { EnemyGrid, CELL_H } from './enemies.js';
 import { ShieldSet, SHIELD_Y } from './shields.js';
@@ -29,6 +29,7 @@ const BEAM_TIME = 0.5;               // sekunder Refaktoreringens stråle sveper
 const SLOW_FACTOR = 0.5;             // Extended thinking: fiender och fiendeskott i halv fart
 const SHIELD_GRACE = 0.6;            // osårbarhet efter att en sköld tagit en träff
 const MENU_PANEL_TIME = 4;           // sekunder per panel i startmenyn (kontroller / topplista)
+const SPLASH_TIME = 1.5;             // sekunder topplistesplashen syns
 const NAME_KEYS = ['left', 'right', 'up', 'down', 'fire', 'confirm'];
 const SHAKE = { hurt: [3, 0.35], boss: [5, 0.6], refactor: [2, 0.3] }; // [amplitud i px, sekunder]
 
@@ -55,6 +56,10 @@ export class Game {
     this.scores = hs.loadScores();     // topp 10, sorterad fallande
     this.highScore = this.scores[0]?.score ?? 0;
     this.lastRank = -1;                // senaste placeringen på topplistan (-1 = ingen)
+    this.rankBase = this.scores.slice(); // topplistan som den såg ut när matchen startade
+    this.liveRank = null;              // placering (1-10) som poängen ger just nu, annars null
+    this.bestRank = Infinity;          // bästa placeringen hittills i matchen
+    this.rankSplash = null;            // { text, t, dur } eller null
     this.nameEntry = null;             // { name, pos } under enterName
     this.nameBlocked = new Set();      // knappar som hölls nere när spelet tog slut, ignoreras tills de släpps
     this.touchMode = false;            // sätts av touch.js när touchknapparna visas
@@ -133,6 +138,10 @@ export class Game {
     this.shake = 0;
     this.audio.resetMusic();
     this.effects = pu.newEffects();
+    this.rankBase = this.scores.slice();
+    this.liveRank = null;
+    this.bestRank = Infinity;
+    this.rankSplash = null;
     this.startLevel();
     this.state = 'playing';
   }
@@ -334,6 +343,7 @@ export class Game {
     if (this.boss?.eatRects) this.shields.eat(this.boss.eatRects());
 
     if (wasPressed('special')) this.refactor();
+    this.updateRank(dt);
 
     // Fiendeskott mot spelaren (ingen träff under osårbarhet)
     for (const b of this.enemyBullets) {
@@ -368,6 +378,24 @@ export class Game {
       this.audio.sfx('levelclear');
       this.level += 1;
       this.startLevel();
+    }
+  }
+
+  // Placering på topplistan (mot listan vid matchstart) och splash när den förbättras. Splashen blockerar inget.
+  updateRank(dt) {
+    const sp = this.rankSplash;
+    if (sp) {
+      sp.t += dt;
+      if (sp.t >= sp.dur) this.rankSplash = null;
+    }
+    const idx = hs.rankFor(this.rankBase, this.score);
+    this.liveRank = idx === -1 ? null : idx + 1;
+    if (this.liveRank !== null && this.liveRank < this.bestRank) {
+      this.bestRank = this.liveRank;
+      const record = this.liveRank === 1 && this.rankBase.length > 0;
+      const text = record ? STR.rank.record : `${STR.rank.splash} ${this.liveRank}!`;
+      this.rankSplash = { text, rank: this.liveRank, record, t: 0, dur: SPLASH_TIME }; // ersätter en pågående splash
+      this.audio.sfx('rank');
     }
   }
 
@@ -518,10 +546,12 @@ export class Game {
       startBoss: (kind, cycle = 0) => { this.level = (kind === 'stack' ? 10 : 5) + 10 * cycle; this.startLevel(); },
       setBossHp: (n) => this.boss?.setHp(n),
       damageBoss: (n = 1) => this.boss?.damage(n),
-      clearHighscores: () => { hs.clearScores(); this.scores = []; this.highScore = 0; this.lastRank = -1; },
+      // Testkrokarna uppdaterar också matchstartens lista, så att de går att använda under pågående match
+      clearHighscores: () => { hs.clearScores(); this.scores = []; this.rankBase = []; this.highScore = 0; this.lastRank = -1; },
       addHighscore: (name, score, level = 1) => {
         const r = hs.insertScore(this.scores, { name, score, level, date: new Date().toISOString().slice(0, 10) });
         this.scores = r.list;
+        this.rankBase = r.list.slice();
         hs.saveScores(this.scores);
         this.highScore = Math.max(this.highScore, this.scores[0]?.score ?? 0);
         return r.index;
@@ -540,10 +570,12 @@ export class Game {
         break;
       case 'playing':
         this.renderShaken(ctx, () => this.renderPlaying(ctx));
+        this.renderRankSplash(ctx);
         this.renderHud(ctx); // HUD sist och utan skakning, så att inget ritas ovanpå den
         break;
       case 'paused':
         this.renderPlaying(ctx);
+        this.renderRankSplash(ctx);
         this.renderHud(ctx);
         this.renderPaused(ctx);
         break;
@@ -645,6 +677,9 @@ export class Game {
       ctx.fillStyle = filled ? (full ? PALETTE.amber : PALETTE.accent) : PALETTE.muted;
       ctx.fillRect(x0 + i * (segW + 1), y, segW, 7);
     }
+    if (this.liveRank !== null && !full) {
+      drawText(ctx, `${STR.rank.hud} ${this.liveRank}`, WIDTH - 16, y, { color: PALETTE.amber, align: 'right' });
+    }
     if (full) {
       const color = Math.floor(this.frames / 20) % 2 === 0 ? PALETTE.amber : PALETTE.cream;
       drawText(ctx, STR.hud.refactorReady, x0 + CONTEXT_MAX * (segW + 1) + 6, y, { color });
@@ -688,6 +723,25 @@ export class Game {
     for (const f of this.floaters) {
       drawText(ctx, f.text, f.x, f.y - f.t * 14, { color: PALETTE.amber, align: 'center' });
     }
+  }
+
+  // Splash mitt på skärmen: växer in, står still och blinkar sista fjärdedelen
+  renderRankSplash(ctx) {
+    const sp = this.rankSplash;
+    if (!sp) return;
+    if (sp.dur - sp.t < 0.4 && Math.floor(sp.t / 0.07) % 2 === 1) return;
+    const scale = sp.t < 0.12 ? 1 : 2;
+    const w = textWidth(sp.text, scale);
+    const y = 135;
+    const x = Math.round((WIDTH - w) / 2) - 6;
+    const top = y - 5 - 2 * scale;
+    const h = 7 * scale + 8 + 2 * scale;
+    ctx.fillStyle = PALETTE.bg;
+    ctx.fillRect(x, top, w + 12, h);
+    ctx.fillStyle = PALETTE.amber;
+    ctx.fillRect(x, top, w + 12, 1);
+    ctx.fillRect(x, top + h - 1, w + 12, 1);
+    this.text(ctx, sp.text, y, scale, sp.record ? PALETTE.amber : PALETTE.cream);
   }
 
   renderPaused(ctx) {

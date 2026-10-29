@@ -29,6 +29,7 @@ export const STR = Object.freeze({
   nameHint: 'Skriv eller använd piltangenterna',
   nameHintDone: 'Enter eller mellanslag: klar',
   nameHintTouch: 'Välj med pilarna och tryck OK',
+  rank: Object.freeze({ hud: 'Plats', splash: 'Topplistan: plats', record: 'Nytt rekord!' }), // "Plats 7", "Topplistan: plats 7!"
   noName: '---', // sparas om inga tecken valts
   scores: Object.freeze({ title: 'Topplista', name: 'Namn', score: 'Poäng', level: 'Nivå' }),
   // Touchknappar: label ritas med pixeltypsnittet, aria är den tillgängliga etiketten

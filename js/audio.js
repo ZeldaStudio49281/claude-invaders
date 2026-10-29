@@ -205,7 +205,7 @@ export class GameAudio {
   }
 
   // ---- Ljudeffekter --------------------------------------------------------------------------
-  // name: shoot, hit, explosion, powerup, hurt, shieldbreak, refactor, flicker, levelclear, gameover
+  // name: shoot, hit, explosion, powerup, rank, hurt, shieldbreak, refactor, flicker, levelclear, gameover
   // opts.scale: storlek (explosion). Namnet loggas alltid, även om ljudet är tyst eller saknas.
   sfx(name, opts = {}) {
     this.log.push(name);
@@ -317,6 +317,7 @@ const EFFECTS = {
     a.tone('sawtooth', 180, 0.5, 0.12, { to: 1800 });
     a.noise(0.5, 0.1, { filter: 'highpass', f0: 800, to: 6000 });
   },
+  rank: (a) => [76, 83, 88].forEach((m, i) => a.tone('square', mtof(m), 0.08, 0.08, { delay: i * 0.06 })),
   flicker: (a) => a.tone('sine', 1900, 0.04, 0.035, { to: 1500 }),
   levelclear: (a) => [67, 71, 74, 79, 83].forEach((m, i) => a.tone('square', mtof(m), 0.14, 0.09, { delay: i * 0.09 })),
   gameover: (a) => [62, 59, 55, 50].forEach((m, i) => a.tone('sawtooth', mtof(m), 0.28, 0.1, { delay: i * 0.22 })),

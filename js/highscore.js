@@ -65,6 +65,13 @@ export function qualifies(list, score) {
   return score > 0 && (list.length < MAX_SCORES || score > list[list.length - 1].score);
 }
 
+// Index (0-baserat) som poängen skulle få i listan, eller -1 om den inte kvalar. Samma regler som insertScore.
+export function rankFor(list, score) {
+  if (!qualifies(list, score)) return -1;
+  const at = list.findIndex((e) => e.score < score); // lika poäng hamnar under de gamla
+  return at === -1 ? list.length : at;
+}
+
 // Lägger in en post. Returnerar { list, index } där index är placeringen (-1 om den föll bort).
 export function insertScore(list, entry) {
   const clean = cleanEntry(entry);
